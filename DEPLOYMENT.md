@@ -72,7 +72,7 @@ Lors de la première installation, le Vault doit être initialisé :
 ssh -p $VPS_PORT $VPS_USERNAME@$VPS_HOST
 
 # Aller dans le répertoire de déploiement
-cd ~/orion-vault
+cd ~/vault
 
 # Démarrer Vault pour la première fois
 docker-compose -f docker-compose.prod.yaml up -d
@@ -84,7 +84,7 @@ sleep 10
 docker-compose -f docker-compose.prod.yaml logs vault
 
 # Les clés seront affichées dans vault/data/init-output.txt
-docker exec orion_vault_prod cat /vault/data/init-output.txt
+docker exec vault_prod cat /vault/data/init-output.txt
 ```
 
 Vous obtiendrez une sortie comme :
@@ -189,7 +189,7 @@ listener "tcp" {
 
 ```bash
 ssh -p $VPS_PORT $VPS_USERNAME@$VPS_HOST
-cd ~/orion-vault
+cd ~/vault
 docker-compose -f docker-compose.prod.yaml ps
 docker-compose -f docker-compose.prod.yaml logs -f vault
 ```
@@ -204,18 +204,18 @@ docker-compose -f docker-compose.prod.yaml restart vault
 
 ```bash
 # Sur le VPS
-cd ~/orion-vault
+cd ~/vault
 tar -czf vault-backup-$(date +%Y%m%d).tar.gz vault/data/
 
 # Télécharger le backup localement
-scp -P $VPS_PORT $VPS_USERNAME@$VPS_HOST:~/orion-vault/vault-backup-*.tar.gz ./backups/
+scp -P $VPS_PORT $VPS_USERNAME@$VPS_HOST:~/vault/vault-backup-*.tar.gz ./backups/
 ```
 
 ### Restaurer un backup
 
 ```bash
 # Sur le VPS
-cd ~/orion-vault
+cd ~/vault
 docker-compose -f docker-compose.prod.yaml down
 tar -xzf vault-backup-YYYYMMDD.tar.gz
 docker-compose -f docker-compose.prod.yaml up -d
@@ -226,14 +226,14 @@ docker-compose -f docker-compose.prod.yaml up -d
 ### Le Vault est "sealed"
 
 ```bash
-docker exec orion_vault_prod vault operator unseal $VAULT_UNSEAL_KEY
+docker exec vault_prod vault operator unseal $VAULT_UNSEAL_KEY
 ```
 
 ### Impossible de se connecter au Vault
 
 1. Vérifiez que le VPN est actif : `wg show`
 2. Vérifiez que le conteneur tourne : `docker ps | grep vault`
-3. Vérifiez les logs : `docker logs orion_vault_prod`
+3. Vérifiez les logs : `docker logs vault_prod`
 
 ### GitHub Actions échoue
 

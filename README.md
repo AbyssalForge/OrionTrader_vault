@@ -75,7 +75,7 @@ GitHub Push → GitHub Actions → SSH + VPN → VPS OVH → Docker Vault
 
 Pour toute question :
 1. Consultez [DEPLOYMENT.md](DEPLOYMENT.md)
-2. Vérifiez les logs : `docker logs orion_vault_prod`
+2. Vérifiez les logs : `docker logs vault_prod`
 3. Ouvrez une issue GitHub
 
 ## License

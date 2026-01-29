@@ -50,8 +50,8 @@ jobs:
             set -e
 
             # Créer le répertoire de déploiement s'il n'existe pas
-            mkdir -p ~/orion-vault
-            cd ~/orion-vault
+            mkdir -p ~/vault
+            cd ~/vault
 
             # Vérifier si c'est la première installation
             if [ ! -d "vault/data" ]; then
@@ -75,29 +75,29 @@ jobs:
       - name: Copy files to VPS
         run: |
           # Copier uniquement les fichiers nécessaires pour le vault
-          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/orion-vault"
+          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/vault"
 
           # Copier le docker-compose de production
           scp -i ~/.ssh/vps_key -P ${{ secrets.VPS_PORT }} \
             docker-compose.prod.yaml \
-            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/orion-vault/
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/vault/
 
           # Copier les répertoires nécessaires
           scp -i ~/.ssh/vps_key -P ${{ secrets.VPS_PORT }} -r \
             vault/config \
             vault/policies \
             docker-init \
-            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/orion-vault/
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/vault/
 
           # Créer le répertoire vault/data s'il n'existe pas (préserver les données existantes)
           ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} \
             ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
-            "mkdir -p ~/orion-vault/vault/data"
+            "mkdir -p ~/vault/vault/data"
 
       - name: Create .env file on VPS
         run: |
           ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << ENDSSH
-            cd ~/orion-vault
+            cd ~/vault
             cat > .env << 'EOF'
           VAULT_UNSEAL_KEY=${{ secrets.VAULT_UNSEAL_KEY }}
           VAULT_ROOT_TOKEN=${{ secrets.VAULT_ROOT_TOKEN }}
@@ -108,7 +108,7 @@ jobs:
       - name: Start Vault
         run: |
           ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
-            cd ~/orion-vault
+            cd ~/vault
 
             # Démarrer le conteneur Vault
             docker-compose -f docker-compose.prod.yaml up -d

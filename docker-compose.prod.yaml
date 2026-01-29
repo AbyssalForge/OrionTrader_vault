@@ -3,7 +3,7 @@ version: "3.9"
 services:
   vault:
     image: hashicorp/vault:latest
-    container_name: orion_vault_prod
+    container_name: vault_prod
     environment:
       VAULT_ADDR: http://0.0.0.0:8200
       VAULT_API_ADDR: http://0.0.0.0:8200
