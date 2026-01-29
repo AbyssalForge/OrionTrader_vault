@@ -5,16 +5,14 @@ services:
     image: hashicorp/vault:latest
     container_name: vault
     restart: always
+    network_mode: "container:wg-easy"
     cap_add:
       - IPC_LOCK
 
     environment:
-      VAULT_ADDR: http://${VAULT_BIND_ADDR:-0.0.0.0}:8200
-      VAULT_API_ADDR: http://${VAULT_BIND_ADDR:-0.0.0.0}:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_API_ADDR: http://0.0.0.0:8200
       VAULT_UNSEAL_KEY: ${VAULT_UNSEAL_KEY}
-
-    ports:
-      - "${VAULT_BIND_ADDR:-0.0.0.0}:8200:8200"
 
     volumes:
       - ./policies:/vault/policies:ro
