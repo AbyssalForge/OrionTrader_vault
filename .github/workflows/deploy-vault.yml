@@ -90,7 +90,7 @@ jobs:
           # Créer le répertoire data s'il n'existe pas (préserver les données existantes)
           ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} \
             ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
-            "mkdir -p ~/data"
+            "mkdir -p ~/vault/data"
 
       - name: Start Vault
         run: |
