@@ -82,15 +82,15 @@ jobs:
 
           # Copier les répertoires nécessaires
           scp -i ~/.ssh/vps_key -P ${{ secrets.VPS_PORT }} -r \
-            vault/config \
-            vault/policies \
+            config \
+            policies \
             docker-init \
             ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/vault/
 
           # Créer le répertoire data s'il n'existe pas (préserver les données existantes)
           ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} \
             ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
-            "mkdir -p ~/vault/data"
+            "mkdir -p ~/data"
 
       - name: Start Vault
         run: |
