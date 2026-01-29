@@ -74,6 +74,7 @@ ssh -p $VPS_PORT $VPS_USERNAME@$VPS_HOST
 # Aller dans le répertoire de déploiement
 cd ~/vault
 
+
 # Démarrer Vault pour la première fois
 docker-compose -f docker-compose.prod.yaml up -d
 
