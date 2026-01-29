@@ -12,9 +12,9 @@ services:
       - "8200:8200"
     restart: always
     volumes:
-      - ./vault/policies:/vault/policies:ro
-      - ./vault/data:/vault/data
-      - ./vault/config:/vault/config:ro
+      - ./policies:/vault/policies:ro
+      - ./data:/vault/data
+      - ./config:/vault/config:ro
       - ./docker-init/vault-auto-unseal.sh:/vault/auto-unseal.sh:ro
       - ./docker-init/vault-entrypoint.sh:/vault/entrypoint.sh:ro
     cap_add:

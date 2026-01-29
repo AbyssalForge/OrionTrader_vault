@@ -42,8 +42,6 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
-          VAULT_UNSEAL_KEY: ${{ secrets.VAULT_UNSEAL_KEY }}
-          VAULT_ROOT_TOKEN: ${{ secrets.VAULT_ROOT_TOKEN }}
         run: |
           # Connexion SSH et déploiement
           ssh -i ~/.ssh/vps_key -p $VPS_PORT $VPS_USERNAME@$VPS_HOST << 'ENDSSH'
@@ -54,7 +52,7 @@ jobs:
             cd ~/vault
 
             # Vérifier si c'est la première installation
-            if [ ! -d "vault/data" ]; then
+            if [ ! -d "data" ]; then
               echo "Première installation détectée"
               FIRST_INSTALL=true
             else
@@ -66,8 +64,8 @@ jobs:
               docker-compose -f docker-compose.prod.yaml down || true
             fi
 
-            # Nettoyer les anciens fichiers (sauf vault/data qui contient les données)
-            find . -maxdepth 1 -not -name 'vault' -not -name '.' -not -name '..' -exec rm -rf {} +
+            # Nettoyer les anciens fichiers (sauf data qui contient les données)
+            find . -maxdepth 1 -not -name 'data' -not -name '.' -not -name '..' -exec rm -rf {} +
 
             echo "Déploiement terminé. Téléchargement des nouveaux fichiers..."
           ENDSSH
@@ -89,25 +87,14 @@ jobs:
             docker-init \
             ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/vault/
 
-          # Créer le répertoire vault/data s'il n'existe pas (préserver les données existantes)
+          # Créer le répertoire data s'il n'existe pas (préserver les données existantes)
           ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} \
             ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
-            "mkdir -p ~/vault/vault/data"
-
-      - name: Create .env file on VPS
-        run: |
-          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << ENDSSH
-            cd ~/vault
-            cat > .env << 'EOF'
-          VAULT_UNSEAL_KEY=${{ secrets.VAULT_UNSEAL_KEY }}
-          VAULT_ROOT_TOKEN=${{ secrets.VAULT_ROOT_TOKEN }}
-          EOF
-            chmod 600 .env
-          ENDSSH
+            "mkdir -p ~/vault/data"
 
       - name: Start Vault
         run: |
-          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << ENDSSH
             cd ~/vault
 
             # Démarrer le conteneur Vault
