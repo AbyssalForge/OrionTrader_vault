@@ -61,7 +61,7 @@ jobs:
 
             # Arrêter les conteneurs existants
             if [ -f docker-compose.prod.yaml ]; then
-              docker-compose -f docker-compose.prod.yaml down || true
+              sudo docker-compose -f docker-compose.prod.yaml down || true
             fi
 
             # Nettoyer les anciens fichiers (sauf data qui contient les données)
@@ -98,15 +98,15 @@ jobs:
             cd ~/vault
 
             # Démarrer le conteneur Vault
-            docker-compose -f docker-compose.prod.yaml up -d
+            sudo docker-compose -f docker-compose.prod.yaml up -d
 
             # Attendre que Vault soit prêt
             echo "Attente du démarrage de Vault..."
             sleep 15
 
             # Vérifier le statut
-            docker-compose -f docker-compose.prod.yaml ps
-            docker-compose -f docker-compose.prod.yaml logs --tail=50
+            sudo docker-compose -f docker-compose.prod.yaml ps
+            sudo docker-compose -f docker-compose.prod.yaml logs --tail=50
 
             echo "✅ Déploiement terminé!"
             echo "Vault est accessible sur http://localhost:8200 (via VPN uniquement)"
