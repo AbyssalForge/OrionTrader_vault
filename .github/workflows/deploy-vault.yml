@@ -97,8 +97,8 @@ jobs:
           ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << ENDSSH
             cd ~/vault
 
-            # Démarrer le conteneur Vault (bind sur l'IP VPN)
-            VAULT_BIND_ADDR=10.8.0.1 sudo -E docker-compose -f docker-compose.yaml up -d
+            # Démarrer le conteneur Vault
+            VAULT_BIND_ADDR=0.0.0.0 sudo -E docker-compose -f docker-compose.yaml up -d
 
             # Attendre que Vault soit prêt
             echo "Attente du démarrage de Vault..."
@@ -109,7 +109,8 @@ jobs:
             sudo docker-compose -f docker-compose.yaml logs --tail=50
 
             echo "✅ Déploiement terminé!"
-            echo "Vault est accessible sur http://localhost:8200 (via VPN uniquement)"
+            echo "Vault est accessible sur http://localhost:8200"
+            echo "⚠️  IMPORTANT: Configurez un firewall pour restreindre l'accès au port 8200"
           ENDSSH
 
       - name: Disconnect VPN
