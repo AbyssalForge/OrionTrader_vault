@@ -1,0 +1,136 @@
+name: Deploy Vault to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/vps_key
+          chmod 600 ~/.ssh/vps_key
+          ssh-keyscan -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Connect to WireGuard VPN
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wireguard resolvconf
+
+          # Configuration WireGuard (à adapter selon votre config VPN)
+          # Vous devrez ajouter votre config WireGuard complète dans les secrets
+          echo "${{ secrets.WG_CONFIG }}" | sudo tee /etc/wireguard/wg0.conf
+
+          # Démarrer WireGuard
+          sudo wg-quick up wg0
+
+          # Vérifier la connexion VPN
+          sudo wg show
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+          VAULT_UNSEAL_KEY: ${{ secrets.VAULT_UNSEAL_KEY }}
+          VAULT_ROOT_TOKEN: ${{ secrets.VAULT_ROOT_TOKEN }}
+        run: |
+          # Connexion SSH et déploiement
+          ssh -i ~/.ssh/vps_key -p $VPS_PORT $VPS_USERNAME@$VPS_HOST << 'ENDSSH'
+            set -e
+
+            # Créer le répertoire de déploiement s'il n'existe pas
+            mkdir -p ~/orion-vault
+            cd ~/orion-vault
+
+            # Vérifier si c'est la première installation
+            if [ ! -d "vault/data" ]; then
+              echo "Première installation détectée"
+              FIRST_INSTALL=true
+            else
+              FIRST_INSTALL=false
+            fi
+
+            # Arrêter les conteneurs existants
+            if [ -f docker-compose.prod.yaml ]; then
+              docker-compose -f docker-compose.prod.yaml down || true
+            fi
+
+            # Nettoyer les anciens fichiers (sauf vault/data qui contient les données)
+            find . -maxdepth 1 -not -name 'vault' -not -name '.' -not -name '..' -exec rm -rf {} +
+
+            echo "Déploiement terminé. Téléchargement des nouveaux fichiers..."
+          ENDSSH
+
+      - name: Copy files to VPS
+        run: |
+          # Copier uniquement les fichiers nécessaires pour le vault
+          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p ~/orion-vault"
+
+          # Copier le docker-compose de production
+          scp -i ~/.ssh/vps_key -P ${{ secrets.VPS_PORT }} \
+            docker-compose.prod.yaml \
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/orion-vault/
+
+          # Copier les répertoires nécessaires
+          scp -i ~/.ssh/vps_key -P ${{ secrets.VPS_PORT }} -r \
+            vault/config \
+            vault/policies \
+            docker-init \
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:~/orion-vault/
+
+          # Créer le répertoire vault/data s'il n'existe pas (préserver les données existantes)
+          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} \
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} \
+            "mkdir -p ~/orion-vault/vault/data"
+
+      - name: Create .env file on VPS
+        run: |
+          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << ENDSSH
+            cd ~/orion-vault
+            cat > .env << 'EOF'
+          VAULT_UNSEAL_KEY=${{ secrets.VAULT_UNSEAL_KEY }}
+          VAULT_ROOT_TOKEN=${{ secrets.VAULT_ROOT_TOKEN }}
+          EOF
+            chmod 600 .env
+          ENDSSH
+
+      - name: Start Vault
+        run: |
+          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_PORT }} ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+            cd ~/orion-vault
+
+            # Démarrer le conteneur Vault
+            docker-compose -f docker-compose.prod.yaml up -d
+
+            # Attendre que Vault soit prêt
+            echo "Attente du démarrage de Vault..."
+            sleep 15
+
+            # Vérifier le statut
+            docker-compose -f docker-compose.prod.yaml ps
+            docker-compose -f docker-compose.prod.yaml logs --tail=50
+
+            echo "✅ Déploiement terminé!"
+            echo "Vault est accessible sur http://localhost:8200 (via VPN uniquement)"
+          ENDSSH
+
+      - name: Disconnect VPN
+        if: always()
+        run: |
+          sudo wg-quick down wg0 || true
+
+      - name: Cleanup SSH key
+        if: always()
+        run: |
+          rm -f ~/.ssh/vps_key

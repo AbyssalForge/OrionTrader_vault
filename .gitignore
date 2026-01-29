@@ -1,0 +1,30 @@
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Vault data (secrets)
+vault/data/*
+!vault/data/.gitkeep
+
+# Vault keys
+vault/.vault-keys
+*.pem
+*.key
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
